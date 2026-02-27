@@ -288,7 +288,7 @@ with col1:
     for ch in scorecard["channel_name"]:
         vals = df[df["channel_name"] == ch]["view_count"]
         fig.add_trace(go.Box(y=vals, name=ch[:12], marker_color=ch_color_map.get(ch, "#888"),
-                             boxmean="sd", line=dict(width=2)))
+                             boxmean="sd", line=dict(width=2), boxpoints=False))
     fig.update_layout(title="View Distribution across Network", showlegend=False, height=450, **PLOT_LAYOUT)
     fig.update_yaxes(title="Views (Log Scale)", type="log")
     fig = update_axes(fig)
@@ -318,7 +318,7 @@ with col1:
     fig = go.Figure()
     for ch_name in scorecard["channel_name"]:
         ch_df = df[df["channel_name"] == ch_name]
-        fig.add_trace(go.Scatter(
+        fig.add_trace(go.Scattergl(
             x=ch_df["view_count"], y=ch_df["engagements"],
             mode="markers", name=ch_name[:12],
             marker=dict(color=ch_color_map.get(ch_name, "#888"), size=6, opacity=0.6,
