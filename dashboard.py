@@ -451,7 +451,7 @@ fig.add_trace(go.Scatter(x=eng_q["quarter"], y=eng_q["like_rate"],
 
 fig.add_trace(go.Bar(x=eng_q["quarter"], y=eng_q["avg_comments"],
                      marker_color=ACCENT_2, opacity=0.85,
-                     marker=dict(border=dict(width=0))), row=1, col=2)
+                     marker=dict(line=dict(width=0))), row=1, col=2)
 
 fig.update_layout(
     height=380, showlegend=False,
@@ -541,7 +541,7 @@ with col1:
         marker_color=[PRIMARY if d == "Tuesday" else "#cbd5e1" for d in day_df["Day"]],
         text=[f"{v/1000:.0f}K" for v in day_df["Avg Views"]],
         textposition="outside", textfont=dict(color=FG, weight="bold"),
-        marker=dict(border=dict(width=0))
+        marker=dict(line=dict(width=0))
     ))
     fig.update_layout(title="Velocity by Weekday", **PLOT_LAYOUT)
     fig = update_axes(fig)
@@ -558,7 +558,7 @@ with col2:
         x=[f"{h:02d}:00" for h in hour_df["Hour"]],
         y=hour_df["Avg Views"],
         marker_color=ACCENT_5,
-        marker=dict(border=dict(width=0))
+        marker=dict(line=dict(width=0))
     ))
     fig.update_layout(title="Velocity by Hour (UTC)", **PLOT_LAYOUT)
     fig = update_axes(fig)
@@ -585,7 +585,7 @@ with col1:
         marker_color=COLORS[:len(cat_stats)],
         text=[f"{v/1000:.0f}K" for v in cat_stats["avg_views"]],
         textposition="outside", textfont=dict(color=FG, size=12, weight="600"),
-        marker=dict(border=dict(width=0))
+        marker=dict(line=dict(width=0))
     ))
     fig.update_layout(title="Average Reach by Vertical", height=500, **PLOT_LAYOUT)
     fig.update_yaxes(autorange="reversed")
