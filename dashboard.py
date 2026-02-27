@@ -266,13 +266,13 @@ def update_axes(fig):
         gridcolor="#f1f5f9", 
         zerolinecolor="#e2e8f0", 
         tickfont=dict(color=TEXT_MUTED),
-        title_font=dict(size=13, color=TEXT_MUTED, weight="500")
+        title_font=dict(size=13, color=TEXT_MUTED, weight=500)
     )
     fig.update_yaxes(
         gridcolor="#f1f5f9", 
         zerolinecolor="#e2e8f0", 
         tickfont=dict(color=TEXT_MUTED),
-        title_font=dict(size=13, color=TEXT_MUTED, weight="500")
+        title_font=dict(size=13, color=TEXT_MUTED, weight=500)
     )
     return fig
 
