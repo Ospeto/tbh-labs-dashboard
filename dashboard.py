@@ -8,181 +8,221 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from collections import defaultdict
+from plotly.subplots import make_subplots
 
 # ── Page Config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="TBH Labs Myanmar — Analytics",
-    page_icon="📊",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── Dracula Palette ──────────────────────────────────────────────────────────
-BG        = "#282a36"
-CURRENT   = "#44475a"
-FG        = "#f8f8f2"
-COMMENT   = "#6272a4"
-CYAN      = "#8be9fd"
-GREEN     = "#50fa7b"
-ORANGE    = "#ffb86c"
-PINK      = "#ff79c6"
-PURPLE    = "#bd93f9"
-RED       = "#ff5555"
-YELLOW    = "#f1fa8c"
+# ── Flash UI Palette ──────────────────────────────────────────────────────────
+BG        = "#f8fafc"  # Very light blue-grey
+CARD_BG   = "#ffffff"
+FG        = "#0f172a"  # Slate 900
+TEXT_MUTED= "#64748b"  # Slate 500
+BORDER    = "#e2e8f0"  # Slate 200
 
-COLORS = [CYAN, GREEN, ORANGE, PINK, PURPLE, RED, YELLOW, "#8be9fd", "#ff79c6", "#50fa7b", "#ffb86c", "#bd93f9"]
+# Vibrant Tech Gradients/Accents (Flash UI)
+PRIMARY   = "#3b82f6"  # Blue
+ACCENT_1  = "#8b5cf6"  # Violet
+ACCENT_2  = "#ec4899"  # Pink
+ACCENT_3  = "#10b981"  # Emerald
+ACCENT_4  = "#f59e0b"  # Amber
+ACCENT_5  = "#06b6d4"  # Cyan
+
+COLORS = [PRIMARY, ACCENT_1, ACCENT_2, ACCENT_3, ACCENT_4, ACCENT_5, "#f43f5e", "#8b5cf6", "#14b8a6", "#3b82f6", "#ec4899"]
 
 # ── Custom CSS ───────────────────────────────────────────────────────────────
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
     html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; }}
-
-    /* Force Streamlit dark backgrounds */
+    
     .stApp {{ background-color: {BG}; }}
-    section[data-testid="stSidebar"] {{ background-color: #21222c; }}
-    section[data-testid="stSidebar"] * {{ color: {FG}; }}
-
+    
     .main .block-container {{
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 1200px;
+        padding-top: 2.5rem;
+        padding-bottom: 3rem;
+        max-width: 1280px;
     }}
 
-    /* Header */
-    .dashboard-header {{
-        background: linear-gradient(135deg, #282a36 0%, #44475a 50%, {PURPLE} 100%);
-        padding: 2.5rem 2rem;
+    /* Global Typography adjustments */
+    h1, h2, h3, h4, h5, h6 {{
+        color: {FG} !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.025em;
+    }}
+    p, span, div {{ color: {FG}; }}
+
+    /* Streamlit overrides for clean UI */
+    section[data-testid="stSidebar"] {{ 
+        background-color: {CARD_BG}; 
+        border-right: 1px solid {BORDER};
+    }}
+    
+    div[data-testid="stMetric"] {{
+        background: {CARD_BG};
+        border: 1px solid {BORDER};
         border-radius: 16px;
-        margin-bottom: 2rem;
-        text-align: center;
-        box-shadow: 0 8px 32px rgba(189, 147, 249, 0.25);
-        border: 1px solid {CURRENT};
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }}
+    div[data-testid="stMetric"]:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+    }}
+
+    /* The 'Flash' Header */
+    .dashboard-header {{
+        background: {CARD_BG};
+        padding: 3rem 2.5rem;
+        border-radius: 24px;
+        margin-bottom: 3rem;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid {BORDER};
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    }}
+    /* Gradient swoosh effect */
+    .dashboard-header::before {{
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, {ACCENT_5}, {PRIMARY}, {ACCENT_1}, {ACCENT_2});
     }}
     .dashboard-header h1 {{
-        color: {FG};
-        font-size: 2.2rem;
-        font-weight: 800;
-        margin: 0 0 0.3rem 0;
-        letter-spacing: -0.5px;
+        font-size: 3rem !important;
+        font-weight: 900 !important;
+        margin: 0 0 0.5rem 0;
+        background: linear-gradient(to right, {FG}, #334155);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -1.5px;
     }}
     .dashboard-header p {{
-        color: {COMMENT};
-        font-size: 0.95rem;
+        color: {TEXT_MUTED};
+        font-size: 1.1rem;
         margin: 0;
+        font-weight: 500;
     }}
 
-    /* KPI Cards */
+    /* Custom KPI Cards */
     .kpi-container {{
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
     }}
     .kpi-card {{
-        flex: 1;
-        min-width: 160px;
-        background: {CURRENT};
-        border: 1px solid {COMMENT};
-        border-radius: 12px;
-        padding: 1.2rem 1rem;
-        text-align: center;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        background: {CARD_BG};
+        border: 1px solid {BORDER};
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }}
+    .kpi-card:hover {{
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
+        border-color: #cbd5e1;
     }}
     .kpi-card .kpi-value {{
-        font-size: 1.7rem;
-        font-weight: 800;
-        font-family: 'Fira Code', monospace;
-        color: {PURPLE};
-        line-height: 1.2;
+        font-family: 'Inter', sans-serif;
+        font-size: 2.2rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, {PRIMARY}, {ACCENT_1});
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.1;
+        margin-bottom: 0.25rem;
     }}
     .kpi-card .kpi-label {{
-        font-size: 0.75rem;
-        color: {COMMENT};
+        font-size: 0.8rem;
+        color: {TEXT_MUTED};
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-top: 0.3rem;
+        letter-spacing: 0.05em;
     }}
 
     /* Section headers */
     .section-header {{
-        background: linear-gradient(90deg, {CURRENT}, transparent);
-        padding: 0.8rem 1.2rem;
-        border-radius: 8px;
-        border-left: 4px solid {PURPLE};
-        margin: 2rem 0 1rem 0;
+        margin: 3rem 0 1.5rem 0;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid {BORDER};
+        display: flex;
+        align-items: center;
     }}
     .section-header h2 {{
-        color: {FG};
-        font-size: 1.3rem;
-        font-weight: 700;
+        font-size: 1.5rem;
         margin: 0;
+        color: {FG};
     }}
 
-    /* Insight box */
+    /* Insight box (Glassmorphism minimalist) */
     .insight-box {{
-        background: {CURRENT};
-        border: 1px solid {CYAN};
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin: 0.5rem 0 1rem 0;
-        color: {FG};
-        font-size: 0.9rem;
-        line-height: 1.5;
+        background: rgba(59, 130, 246, 0.05);
+        border-left: 4px solid {PRIMARY};
+        border-radius: 0 12px 12px 0;
+        padding: 1.25rem 1.5rem;
+        margin: 1rem 0 2rem 0;
+        color: #334155;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        font-weight: 500;
     }}
-    .insight-box strong {{ color: {CYAN}; }}
+    .insight-box strong {{ color: {FG}; font-weight: 700; }}
 
     /* Recommendation cards */
     .rec-card {{
-        background: {CURRENT};
-        border: 1px solid {COMMENT};
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin-bottom: 0.8rem;
+        background: {CARD_BG};
+        border: 1px solid {BORDER};
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        transition: transform 0.2s;
     }}
-    .rec-card.green {{ border-left: 4px solid {GREEN}; }}
-    .rec-card.red {{ border-left: 4px solid {RED}; }}
-    .rec-card.blue {{ border-left: 4px solid {PURPLE}; }}
-    .rec-card h4 {{ color: {FG}; margin: 0 0 0.3rem 0; font-size: 0.95rem; }}
-    .rec-card p {{ color: {COMMENT}; margin: 0; font-size: 0.85rem; line-height: 1.4; }}
+    .rec-card:hover {{ transform: scale(1.01); }}
+    
+    .rec-card.green .rec-icon {{ background: rgba(16, 185, 129, 0.1); color: {ACCENT_3}; }}
+    .rec-card.red .rec-icon {{ background: rgba(239, 68, 68, 0.1); color: #ef4444; }}
+    .rec-card.blue .rec-icon {{ background: rgba(59, 130, 246, 0.1); color: {PRIMARY}; }}
+    
+    .rec-card-header {{ display: flex; align-items: center; margin-bottom: 0.75rem; }}
+    .rec-icon {{ 
+        width: 32px; height: 32px; 
+        border-radius: 8px; 
+        display: flex; align-items: center; justify-content: center;
+        margin-right: 1rem;
+        font-weight: 800;
+    }}
+    
+    .rec-card h4 {{ margin: 0; font-size: 1.05rem; font-weight: 700; }}
+    .rec-card p {{ color: {TEXT_MUTED}; margin: 0; font-size: 0.9rem; line-height: 1.5; }}
 
-    div[data-testid="stMetric"] {{
-        background: {CURRENT};
-        border: 1px solid {COMMENT};
+    /* DataFrame styling */
+    [data-testid="stDataFrame"] {{
+        border: 1px solid {BORDER};
         border-radius: 12px;
-        padding: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
     }}
-
-    .stPlotlyChart {{ border-radius: 12px; overflow: hidden; }}
-
-    /* Dataframe */
-    .stDataFrame {{ border-radius: 8px; overflow: hidden; }}
-
-    /* Streamlit Inputs (Select, Multiselect, Dropdowns) */
-    div[data-baseweb="select"] > div {{
-        background-color: {BG};
-        border-color: {COMMENT};
-        color: {FG};
-    }}
-    span[data-baseweb="tag"] {{
-        background-color: {CURRENT};
-        color: {FG};
-        border: 1px solid {COMMENT};
-    }}
-    div[role="listbox"] {{
-        background-color: {BG};
-    }}
-    div[role="listbox"] li {{
-        color: {FG};
-    }}
-    div[role="listbox"] li:hover {{
-        background-color: {CURRENT};
-    }}
-    div[role="listbox"] li[aria-selected="true"] {{
-        background-color: {CURRENT};
-        color: {PURPLE};
+    
+    /* Plotly charts container */
+    .stPlotlyChart {{
+        background: {CARD_BG};
+        border: 1px solid {BORDER};
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+        padding: 0.5rem;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -204,21 +244,44 @@ df_all = load_data()
 df = df_all[df_all["year"] >= 2021].copy()
 
 # ── Plot theme ───────────────────────────────────────────────────────────────
+# Flash UI uses clean white plots with prominent data and subtle grid lines
 PLOT_LAYOUT = dict(
-    template="plotly_dark",
-    paper_bgcolor="rgba(40,42,54,0)",
-    plot_bgcolor="rgba(68,71,90,0.4)",
-    font=dict(family="Inter", color=FG, size=13),
-    margin=dict(l=50, r=30, t=50, b=50),
-    hoverlabel=dict(bgcolor=CURRENT, font_size=13, bordercolor=COMMENT),
+    template="plotly_white",
+    paper_bgcolor="rgba(255,255,255,0)",
+    plot_bgcolor="rgba(255,255,255,0)",
+    font=dict(family="Inter", color=TEXT_MUTED, size=13),
+    margin=dict(l=40, r=20, t=60, b=40),
+    hoverlabel=dict(
+        bgcolor=CARD_BG, 
+        font_size=13, 
+        font_family="Inter",
+        bordercolor=BORDER,
+        font_color=FG
+    ),
+    title_font=dict(size=16, color=FG, family="Inter", weight="bold"),
 )
+
+def update_axes(fig):
+    fig.update_xaxes(
+        gridcolor="#f1f5f9", 
+        zerolinecolor="#e2e8f0", 
+        tickfont=dict(color=TEXT_MUTED),
+        title_font=dict(size=13, color=TEXT_MUTED, weight="500")
+    )
+    fig.update_yaxes(
+        gridcolor="#f1f5f9", 
+        zerolinecolor="#e2e8f0", 
+        tickfont=dict(color=TEXT_MUTED),
+        title_font=dict(size=13, color=TEXT_MUTED, weight="500")
+    )
+    return fig
 
 
 # ═══════════════════ HEADER ═══════════════════════════════════════════════════
 st.markdown(f"""
 <div class="dashboard-header">
-    <h1>📊 TBH Labs Myanmar</h1>
-    <p>YouTube Channel Performance Dashboard &nbsp;|&nbsp; 2021 – 2026 &nbsp;|&nbsp; 734 Videos Analyzed</p>
+    <h1>⚡ TBH Labs Analytics</h1>
+    <p>Strategic Performance Dashboard &nbsp;|&nbsp; 2021–2026 &nbsp;|&nbsp; <b>{len(df_all)}</b> Videos Indexed</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -235,11 +298,11 @@ st.markdown(f"""
 <div class="kpi-container">
     <div class="kpi-card">
         <div class="kpi-value">{total_views/1e6:.1f}M</div>
-        <div class="kpi-label">Total Views</div>
+        <div class="kpi-label">Lifetime Views</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-value">{avg_views/1e3:.1f}K</div>
-        <div class="kpi-label">Avg Views / Video</div>
+        <div class="kpi-label">Average Views</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-value">{med_views/1e3:.1f}K</div>
@@ -247,15 +310,15 @@ st.markdown(f"""
     </div>
     <div class="kpi-card">
         <div class="kpi-value">{total_videos}</div>
-        <div class="kpi-label">Videos</div>
+        <div class="kpi-label">Videos Published</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-value">{like_rate:.1f}%</div>
-        <div class="kpi-label">Like Rate</div>
+        <div class="kpi-value">{like_rate:.2f}%</div>
+        <div class="kpi-label">Audience Like Rate</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-value">{int(avg_dur//60)}:{int(avg_dur%60):02d}</div>
-        <div class="kpi-label">Avg Duration</div>
+        <div class="kpi-label">Avg Watch Length</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -263,24 +326,26 @@ st.markdown(f"""
 
 # ═══════════════════ SIDEBAR ══════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("### 🎛️ Filters")
+    st.markdown("### 🎛️ Control Panel")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     years = sorted(df["year"].unique())
-    sel_years = st.multiselect("Year", years, default=years)
+    sel_years = st.multiselect("Timeline Selection", years, default=years)
 
     categories = sorted(df["category"].unique())
-    sel_cats = st.multiselect("Category", categories, default=categories)
+    sel_cats = st.multiselect("Content Verticals", categories, default=categories)
 
-    min_views = st.slider("Min Views", 0, int(df["view_count"].max()), 0, step=1000)
+    min_views = st.slider("View Threshold", 0, int(df["view_count"].max()), 0, step=1000)
 
-    st.markdown("---")
+    st.markdown("<br><hr>", unsafe_allow_html=True)
     st.markdown("### 📌 Navigation")
     st.markdown("""
     - [Overview](#overview)
-    - [Time Series](#time-series-trends)
-    - [Duration](#duration-analysis)
-    - [Upload Timing](#best-upload-timing)
-    - [Categories](#category-performance)
-    - [Recommendations](#expert-recommendations)
+    - [Time Series Trends](#time-series-trends)
+    - [Duration Sweet Spot](#duration-sweet-spot)
+    - [Upload Telemetry](#upload-telemetry)
+    - [Category Matrices](#category-matrices)
+    - [Actionable Intel](#actionable-intel)
     """)
 
 fdf = df[(df["year"].isin(sel_years)) & (df["category"].isin(sel_cats)) & (df["view_count"] >= min_views)]
@@ -293,34 +358,38 @@ col1, col2 = st.columns(2)
 
 with col1:
     fig = px.histogram(fdf, x="view_count", nbins=50,
-                       title="View Count Distribution",
-                       color_discrete_sequence=[PURPLE])
+                       title="Audience Reach Distribution",
+                       color_discrete_sequence=[PRIMARY])
     fig.update_layout(**PLOT_LAYOUT)
-    fig.update_xaxes(title="Views", gridcolor=CURRENT)
-    fig.update_yaxes(title="Number of Videos", gridcolor=CURRENT)
+    fig = update_axes(fig)
+    fig.update_xaxes(title="Total Views")
+    fig.update_yaxes(title="Video Count")
+    fig.update_traces(marker=dict(line=dict(width=1, color="white")))
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with col2:
     pcts = [10, 25, 50, 75, 90]
     fig2 = go.Figure(data=[go.Bar(
-        x=[f"P{p}" for p in pcts],
+        x=[f"p{p}" for p in pcts],
         y=[fdf["view_count"].quantile(p/100) for p in pcts],
-        marker_color=[COMMENT, COMMENT, CYAN, COMMENT, COMMENT],
+        marker_color=["#cbd5e1", "#cbd5e1", ACCENT_1, "#cbd5e1", "#cbd5e1"],
         text=[f"{int(fdf['view_count'].quantile(p/100)):,}" for p in pcts],
         textposition="outside",
-        textfont=dict(color=FG, size=13)
+        textfont=dict(color=FG, size=13, weight="bold"),
+        marker=dict(line=dict(width=0))
     )])
-    fig2.update_layout(title="View Count Percentiles", **PLOT_LAYOUT)
-    fig2.update_xaxes(title="Percentile", gridcolor=CURRENT)
-    fig2.update_yaxes(title="Views", gridcolor=CURRENT)
-    st.plotly_chart(fig2, use_container_width=True)
+    fig2.update_layout(title="Performance Percentiles", **PLOT_LAYOUT)
+    fig2 = update_axes(fig2)
+    fig2.update_xaxes(title="Percentile Rank")
+    fig2.update_yaxes(title="Total Views", range=[0, fdf["view_count"].quantile(0.9)*1.3])
+    st.plotly_chart(fig2, use_container_width=True, theme=None)
 
 # Top 10 videos
-st.markdown("#### 🏆 Top 10 Videos")
+st.markdown("#### ⭐ High Impact Content (Top 10)")
 top10 = fdf.nlargest(10, "view_count")[["title", "view_count", "like_count", "comment_count", "duration", "upload_date", "category"]]
 top10 = top10.reset_index(drop=True)
 top10.index = top10.index + 1
-top10.columns = ["Title", "Views", "Likes", "Comments", "Duration", "Date", "Category"]
+top10.columns = ["Content Title", "Reach", "Likes", "Engagement", "Duration", "Air Date", "Vertical"]
 st.dataframe(top10, use_container_width=True)
 
 
@@ -343,60 +412,28 @@ col1, col2 = st.columns(2)
 with col1:
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=monthly["month"], y=monthly["avg_views"],
-                             mode="lines", name="Avg Views",
-                             line=dict(color=PURPLE, width=1),
-                             fill="tozeroy", fillcolor="rgba(189,147,249,0.1)"))
+                             mode="lines", name="Monthly Avg",
+                             line=dict(color="#cbd5e1", width=2),
+                             fill="tozeroy", fillcolor="rgba(203, 213, 225, 0.2)"))
     fig.add_trace(go.Scatter(x=monthly["month"], y=monthly["roll_3m"],
-                             mode="lines", name="3M Rolling Avg",
-                             line=dict(color=ORANGE, width=3)))
-    fig.update_layout(title="Monthly Avg Views (with 3M Rolling Average)", **PLOT_LAYOUT,
-                      legend=dict(x=0.01, y=0.99, bgcolor="rgba(40,42,54,0.7)"))
-    fig.update_xaxes(gridcolor=CURRENT)
-    fig.update_yaxes(gridcolor=CURRENT)
+                             mode="lines", name="3M Momentum",
+                             line=dict(color=PRIMARY, width=4)))
+    fig.update_layout(title="View Volume Momentum", **PLOT_LAYOUT,
+                      legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.9)", bordercolor=BORDER, borderwidth=1))
+    fig = update_axes(fig)
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with col2:
     fig = go.Figure()
     fig.add_trace(go.Bar(x=monthly["month"], y=monthly["count"],
-                         marker_color=GREEN, name="Videos", opacity=0.8))
-    fig.update_layout(title="Upload Frequency (Videos per Month)", **PLOT_LAYOUT)
-    fig.update_yaxes(title="Videos", gridcolor=CURRENT)
-    fig.update_xaxes(gridcolor=CURRENT)
+                         marker_color=ACCENT_5, name="Uploads", 
+                         marker=dict(line=dict(width=0))))
+    fig.update_layout(title="Production Velocity (Uploads/Month)", **PLOT_LAYOUT)
+    fig = update_axes(fig)
+    fig.update_yaxes(title="Volume")
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
-# Quarterly
-quarterly = fdf.groupby("quarter").agg(
-    count=("view_count", "size"),
-    avg_views=("view_count", "mean"),
-    total_views=("view_count", "sum"),
-).reset_index()
-
-col1, col2 = st.columns(2)
-
-with col1:
-    fig = px.bar(quarterly, x="quarter", y="avg_views",
-                 title="Quarterly Avg Views",
-                 color_discrete_sequence=[PURPLE])
-    fig.update_layout(**PLOT_LAYOUT)
-    fig.update_xaxes(gridcolor=CURRENT)
-    fig.update_yaxes(gridcolor=CURRENT)
-    st.plotly_chart(fig, use_container_width=True, theme=None)
-
-with col2:
-    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    seasonal = fdf.groupby("month_num")["view_count"].mean().reindex(range(1,13)).fillna(0)
-    fig = go.Figure(go.Bar(
-        x=[month_names[i] for i in range(12)],
-        y=seasonal.values,
-        marker_color=[RED if v == seasonal.max() else CYAN for v in seasonal.values],
-    ))
-    fig.update_layout(title="Seasonal Pattern (Avg Views by Month of Year)", **PLOT_LAYOUT)
-    fig.update_xaxes(gridcolor=CURRENT)
-    fig.update_yaxes(gridcolor=CURRENT)
-    st.plotly_chart(fig, use_container_width=True, theme=None)
-
-# Engagement trend — FIXED: separate subplots instead of overlapping dual-axis
-st.markdown("#### 📊 Engagement Trend")
+st.markdown("#### 💬 Engagement Multipliers")
 eng_q = fdf.groupby("quarter").agg(
     like_sum=("like_count", "sum"),
     view_sum=("view_count", "sum"),
@@ -404,41 +441,36 @@ eng_q = fdf.groupby("quarter").agg(
 ).reset_index()
 eng_q["like_rate"] = eng_q["like_sum"] / eng_q["view_sum"] * 100
 
-from plotly.subplots import make_subplots
-
-fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
-                    subplot_titles=("Like Rate % Over Time", "Avg Comments Per Video"),
-                    vertical_spacing=0.12, row_heights=[0.5, 0.5])
+fig = make_subplots(rows=1, cols=2, shared_xaxes=False,
+                    subplot_titles=("Audience Like Rate (%)", "Conversation Depth (Avg Comments)"))
 
 fig.add_trace(go.Scatter(x=eng_q["quarter"], y=eng_q["like_rate"],
-                         mode="lines+markers", name="Like Rate %",
-                         line=dict(color=GREEN, width=3),
-                         marker=dict(size=6)), row=1, col=1)
+                         mode="lines+markers", line=dict(color=ACCENT_3, width=3),
+                         fill="tozeroy", fillcolor="rgba(16, 185, 129, 0.1)",
+                         marker=dict(size=8, color=ACCENT_3, line=dict(color="white", width=2))), row=1, col=1)
 
 fig.add_trace(go.Bar(x=eng_q["quarter"], y=eng_q["avg_comments"],
-                     name="Avg Comments", marker_color=PURPLE, opacity=0.7), row=2, col=1)
+                     marker_color=ACCENT_2, opacity=0.85,
+                     marker=dict(border=dict(width=0))), row=1, col=2)
 
 fig.update_layout(
-    height=450,
-    showlegend=False,
-    **{k: v for k, v in PLOT_LAYOUT.items() if k != "margin"},
-    margin=dict(l=50, r=30, t=40, b=40),
+    height=380, showlegend=False,
+    **{k: v for k, v in PLOT_LAYOUT.items() if k not in ["margin", "height"]}
 )
-fig.update_xaxes(gridcolor=CURRENT)
-fig.update_yaxes(gridcolor=CURRENT)
-fig.update_annotations(font_color=FG, font_size=13)
+fig.update_annotations(font_color=FG, font_size=16, font_family="Inter", font_weight="bold")
+fig = update_axes(fig)
 st.plotly_chart(fig, use_container_width=True, theme=None)
 
 st.markdown(f"""
 <div class="insight-box">
-    <strong>💡 Key Insight:</strong> Engagement is at an all-time high — like rate climbed from 3.3% (2021) to 5.35% (2026 Q1),
-    a <strong>60% increase</strong>. Average comments grew from 25 to 269 — a <strong>10× increase</strong>.
+    <strong>💡 The Engagement Surge:</strong> The audience is deeper into the funnel than ever. Like rate skyrocketed from 3.3% (2021) to <strong>5.35% (2026 Q1)</strong>,
+    while average comments <strong>10x'd</strong> (25 → 269). Less passive viewing, more active community participation.
 </div>
 """, unsafe_allow_html=True)
 
 
 # ═══════════════════ SECTION 3: DURATION ══════════════════════════════════════
-st.markdown('<div class="section-header"><h2>⏱️ Duration Analysis</h2></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header"><h2>⏱️ Duration Sweet Spot</h2></div>', unsafe_allow_html=True)
 
 buckets = [(0, 3), (3, 5), (5, 8), (8, 10), (10, 15), (15, 20), (20, 30), (30, 999)]
 bucket_labels = ["0–3m", "3–5m", "5–8m", "8–10m", "10–15m", "15–20m", "20–30m", "30+m"]
@@ -453,7 +485,6 @@ for (lo, hi), label in zip(buckets, bucket_labels):
             "Count": len(group),
             "Avg Views": group["view_count"].mean(),
             "Med Views": group["view_count"].median(),
-            "Avg Likes": group["like_count"].mean(),
         })
 
 dur_df = pd.DataFrame(dur_data)
@@ -463,38 +494,40 @@ col1, col2 = st.columns(2)
 with col1:
     fig = go.Figure()
     fig.add_trace(go.Bar(x=dur_df["Bucket"], y=dur_df["Avg Views"],
-                         name="Avg Views",
-                         marker_color=[GREEN if v == dur_df["Avg Views"].max() else CYAN for v in dur_df["Avg Views"]]))
+                         name="Average Reach",
+                         marker_color=["#cbd5e1" if v < dur_df["Avg Views"].max() else ACCENT_1 for v in dur_df["Avg Views"]],
+                         marker=dict(line=dict(width=0))))
     fig.add_trace(go.Scatter(x=dur_df["Bucket"], y=dur_df["Med Views"],
-                             name="Median Views", mode="lines+markers",
-                             line=dict(color=ORANGE, width=3),
-                             marker=dict(size=8)))
-    fig.update_layout(title="Views by Duration Bucket", **PLOT_LAYOUT,
-                      legend=dict(x=0.01, y=0.99, bgcolor="rgba(40,42,54,0.7)"))
-    fig.update_xaxes(gridcolor=CURRENT)
-    fig.update_yaxes(gridcolor=CURRENT)
+                             name="Median Reach", mode="lines+markers",
+                             line=dict(color=FG, width=3),
+                             marker=dict(size=8, color=CARD_BG, line=dict(color=FG, width=2))))
+    fig.update_layout(title="Reach Density by Format Length", **PLOT_LAYOUT,
+                      legend=dict(x=0.02, y=0.98, bgcolor="rgba(255,255,255,0.9)", bordercolor=BORDER, borderwidth=1))
+    fig = update_axes(fig)
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with col2:
     fig = px.scatter(fdf[fdf["duration_min"] <= 60], x="duration_min", y="view_count",
-                     color="category", title="Views vs Duration (scatter)",
-                     color_discrete_sequence=COLORS, opacity=0.5,
+                     color="category", title="Duration vs Reach Map",
+                     color_discrete_sequence=COLORS, opacity=0.7,
                      hover_data=["title"])
     fig.update_layout(**PLOT_LAYOUT, showlegend=False)
-    fig.update_xaxes(title="Duration (minutes)", gridcolor=CURRENT)
-    fig.update_yaxes(title="Views", gridcolor=CURRENT)
+    fig.update_traces(marker=dict(line=dict(width=1, color="white")))
+    fig = update_axes(fig)
+    fig.update_xaxes(title="Runtime (minutes)")
+    fig.update_yaxes(title="Total Views")
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
 st.markdown(f"""
 <div class="insight-box">
-    <strong>💡 Optimal Duration: 15–20 minutes</strong> — delivers 2.5× the channel average (148K avg views)
-    with a strong sample size of 89 videos.
+    <strong>💡 Optimal Format 15–20m:</strong> This runtime delivers <strong>2.5× the channel average</strong> (148K avg views)
+    with a proven sample size of 89 videos. 30+ minutes performs technically higher on average (due to massive hits), but mid-longform is much safer.
 </div>
 """, unsafe_allow_html=True)
 
 
 # ═══════════════════ SECTION 4: UPLOAD TIMING ═════════════════════════════════
-st.markdown('<div class="section-header"><h2>🕐 Best Upload Timing</h2></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header"><h2>🕐 Upload Telemetry</h2></div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -505,13 +538,14 @@ with col1:
 
     fig = go.Figure(go.Bar(
         x=day_df["Day"], y=day_df["Avg Views"],
-        marker_color=[GREEN if d == "Tuesday" else PURPLE for d in day_df["Day"]],
+        marker_color=[PRIMARY if d == "Tuesday" else "#cbd5e1" for d in day_df["Day"]],
         text=[f"{v/1000:.0f}K" for v in day_df["Avg Views"]],
-        textposition="outside", textfont=dict(color=FG)
+        textposition="outside", textfont=dict(color=FG, weight="bold"),
+        marker=dict(border=dict(width=0))
     ))
-    fig.update_layout(title="Avg Views by Day of Week", **PLOT_LAYOUT)
-    fig.update_xaxes(gridcolor=CURRENT)
-    fig.update_yaxes(gridcolor=CURRENT)
+    fig.update_layout(title="Velocity by Weekday", **PLOT_LAYOUT)
+    fig = update_axes(fig)
+    fig.update_yaxes(range=[0, day_df["Avg Views"].max() * 1.2])
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with col2:
@@ -523,61 +557,22 @@ with col2:
     fig = go.Figure(go.Bar(
         x=[f"{h:02d}:00" for h in hour_df["Hour"]],
         y=hour_df["Avg Views"],
-        marker_color=CYAN,
+        marker_color=ACCENT_5,
+        marker=dict(border=dict(width=0))
     ))
-    fig.update_layout(title="Avg Views by Upload Hour (UTC)", **PLOT_LAYOUT)
-    fig.update_xaxes(gridcolor=CURRENT)
-    fig.update_yaxes(gridcolor=CURRENT)
+    fig.update_layout(title="Velocity by Hour (UTC)", **PLOT_LAYOUT)
+    fig = update_axes(fig)
     st.plotly_chart(fig, use_container_width=True, theme=None)
-
-# Heatmap
-fdf_heat = fdf.copy()
-fdf_heat["hour"] = fdf_heat["upload_hour"].str.split(":").str[0].astype(int)
-heat = fdf_heat.groupby(["day_of_week", "hour"])["view_count"].mean().reset_index()
-heat_pivot = heat.pivot_table(index="day_of_week", columns="hour", values="view_count", fill_value=0)
-heat_pivot = heat_pivot.reindex(day_order)
-
-# Dracula-flavored colorscale
-dracula_scale = [
-    [0, BG],
-    [0.25, COMMENT],
-    [0.5, PURPLE],
-    [0.75, PINK],
-    [1, CYAN]
-]
-
-fig = go.Figure(data=go.Heatmap(
-    z=heat_pivot.values,
-    x=[f"{h:02d}:00" for h in heat_pivot.columns],
-    y=heat_pivot.index,
-    colorscale=dracula_scale,
-    text=[[f"{v/1000:.0f}K" if v > 0 else "" for v in row] for row in heat_pivot.values],
-    texttemplate="%{text}",
-    textfont={"size": 10, "color": FG},
-    hovertemplate="Day: %{y}<br>Hour: %{x}<br>Avg Views: %{z:,.0f}<extra></extra>"
-))
-fig.update_layout(title="Upload Time Heatmap (Avg Views)", **PLOT_LAYOUT, height=350)
-st.plotly_chart(fig, use_container_width=True, theme=None)
-
-st.markdown(f"""
-<div class="insight-box">
-    <strong>💡 Best Upload Slot: Tuesday at 14:00 UTC (8:30 PM Myanmar Time)</strong> — avg 171,600 views
-    across 15 uploads, nearly 2× the channel average.
-</div>
-""", unsafe_allow_html=True)
 
 
 # ═══════════════════ SECTION 5: CATEGORIES ════════════════════════════════════
-st.markdown('<div class="section-header"><h2>🏷️ Category Performance</h2></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header"><h2>🏷️ Category Matrices</h2></div>', unsafe_allow_html=True)
 
 cat_stats = fdf.groupby("category").agg(
     count=("view_count", "size"),
     avg_views=("view_count", "mean"),
     med_views=("view_count", "median"),
     total_views=("view_count", "sum"),
-    avg_likes=("like_count", "mean"),
-    avg_comments=("comment_count", "mean"),
-    avg_duration=("duration_min", "mean"),
 ).reset_index().sort_values("avg_views", ascending=False)
 
 col1, col2 = st.columns(2)
@@ -589,149 +584,109 @@ with col1:
         orientation="h",
         marker_color=COLORS[:len(cat_stats)],
         text=[f"{v/1000:.0f}K" for v in cat_stats["avg_views"]],
-        textposition="outside", textfont=dict(color=FG, size=11),
+        textposition="outside", textfont=dict(color=FG, size=12, weight="600"),
+        marker=dict(border=dict(width=0))
     ))
-    fig.update_layout(title="Avg Views by Category", height=550, **PLOT_LAYOUT)
+    fig.update_layout(title="Average Reach by Vertical", height=500, **PLOT_LAYOUT)
     fig.update_yaxes(autorange="reversed")
-    fig.update_xaxes(gridcolor=CURRENT)
+    fig = update_axes(fig)
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
 with col2:
-    # Dracula treemap
-    fig = px.treemap(cat_stats, path=["category"], values="total_views",
-                     color="avg_views",
-                     color_continuous_scale=[[0, COMMENT], [0.5, PURPLE], [1, CYAN]],
-                     title="Category Share (by Total Views)")
-    fig.update_layout(**PLOT_LAYOUT, height=550)
-    fig.update_traces(textinfo="label+percent root",
-                      textfont=dict(color=FG, size=13))
+    # Stacked bar area
+    cat_year = fdf.groupby(["year", "category"]).size().reset_index(name="count")
+    year_totals = fdf.groupby("year").size().reset_index(name="total")
+    cat_year = cat_year.merge(year_totals, on="year")
+    cat_year["pct"] = cat_year["count"] / cat_year["total"] * 100
+
+    key_cats = ["Knowledge", "Review", "Showcases", "Battery Drain Test",
+                "First Impressions", "Wassup", "Shorts", "uncategorized"]
+    cat_year_key = cat_year[cat_year["category"].isin(key_cats)].copy()
+
+    fig = go.Figure()
+    for i, cat in enumerate(key_cats):
+        cat_data = cat_year_key[cat_year_key["category"] == cat].sort_values("year")
+        fig.add_trace(go.Bar(
+            x=cat_data["year"],
+            y=cat_data["pct"],
+            name=cat,
+            marker_color=COLORS[i % len(COLORS)],
+            marker=dict(line=dict(color=CARD_BG, width=1))
+        ))
+
+    fig.update_layout(
+        title="Vertical Strategy Evolution (% of timeline)",
+        barmode="stack",
+        height=500,
+        **PLOT_LAYOUT,
+        legend=dict(x=0, y=-0.25, orientation="h", font=dict(size=11)),
+    )
+    fig = update_axes(fig)
+    fig.update_xaxes(title="Year", dtick=1)
+    fig.update_yaxes(title="% of Output")
     st.plotly_chart(fig, use_container_width=True, theme=None)
-
-# Category mix over time — FIXED: stacked bar chart instead of broken area chart
-st.markdown("#### 📊 Category Mix Over Time")
-cat_year = fdf.groupby(["year", "category"]).size().reset_index(name="count")
-year_totals = fdf.groupby("year").size().reset_index(name="total")
-cat_year = cat_year.merge(year_totals, on="year")
-cat_year["pct"] = cat_year["count"] / cat_year["total"] * 100
-
-# Select key categories for readability
-key_cats = ["Knowledge", "Review", "Showcases", "Battery Drain Test",
-            "First Impressions", "Wassup", "Shorts", "uncategorized"]
-cat_year_key = cat_year[cat_year["category"].isin(key_cats)].copy()
-
-fig = go.Figure()
-for i, cat in enumerate(key_cats):
-    cat_data = cat_year_key[cat_year_key["category"] == cat].sort_values("year")
-    fig.add_trace(go.Bar(
-        x=cat_data["year"],
-        y=cat_data["pct"],
-        name=cat,
-        marker_color=COLORS[i % len(COLORS)],
-    ))
-
-fig.update_layout(
-    title="Category Mix Evolution (% of uploads per year)",
-    barmode="stack",
-    **PLOT_LAYOUT,
-    legend=dict(x=0, y=-0.25, orientation="h", font=dict(size=10)),
-    height=500,
-)
-fig.update_xaxes(title="Year", gridcolor=CURRENT, dtick=1)
-fig.update_yaxes(title="% of Uploads", gridcolor=CURRENT)
-st.plotly_chart(fig, use_container_width=True, theme=None)
 
 
 # ═══════════════════ SECTION 6: RECOMMENDATIONS ══════════════════════════════
-st.markdown('<div class="section-header"><h2>🎯 Expert Recommendations</h2></div>', unsafe_allow_html=True)
+st.markdown('<div class="section-header"><h2>🎯 Actionable Intel</h2></div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("#### ✅ Double Down")
     st.markdown(f"""
     <div class="rec-card green">
-        <h4>1. Knowledge is the growth engine</h4>
-        <p>128K avg views, 4.9% like rate, 67.6% of 2026 content. Data fully validates this strategic bet. Aim for 50–60% at steady state.</p>
+        <div class="rec-card-header">
+            <div class="rec-icon">✓</div>
+            <h4>Scale the Engine</h4>
+        </div>
+        <p><b>Knowledge is king.</b> 128K avg views, 4.9% like rate. It claimed 67.6% of output in 2026 for a reason. Stabilize at 50–60% of total schedule at steady state.</p>
     </div>
     <div class="rec-card green">
-        <h4>2. Target 15–20 minute videos</h4>
-        <p>2.5× channel average views with strong engagement. This is the sweet spot for production effort vs. performance.</p>
+        <div class="rec-card-header">
+            <div class="rec-icon">✓</div>
+            <h4>Adopt the 15M Standard</h4>
+        </div>
+        <p>15-20 min features pull <b>2.5× higher volume.</b> This is the algorithmic sweet spot matching production capability to viewer retention.</p>
     </div>
-    <div class="rec-card green">
-        <h4>3. Upload on Tuesdays at 8:30 PM MMT</h4>
-        <p>171,600 avg views — nearly 2× channel average. Make this the primary upload slot for flagship content.</p>
-    </div>
-    <div class="rec-card green">
-        <h4>4. Plan big for Q4 (Sep–Dec)</h4>
-        <p>Consistently the strongest quarter. Align tentpole content with iPhone launches, holiday shopping, and year-end roundups.</p>
+    <div class="rec-card blue">
+        <div class="rec-card-header">
+            <div class="rec-icon">↗</div>
+            <h4>Leverage Q4 Momentum</h4>
+        </div>
+        <p>September through December is a massive growth window (iPhone + holiday cycle). Plan major tentpole content well in advance of Q4.</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
-    st.markdown("#### ⚠️ Fix or Cut")
     st.markdown(f"""
     <div class="rec-card red">
-        <h4>5. Reduce Showcases by 50%</h4>
-        <p>28% of content at only 53K avg views — 39% below average. Redirect effort to Knowledge or Comparison.</p>
-    </div>
-    <div class="rec-card red">
-        <h4>6. Stop producing Shorts</h4>
-        <p>7,500 avg views — weakest category by far. Shorts rarely convert to long-form subscribers on tech channels.</p>
-    </div>
-    <div class="rec-card blue">
-        <h4>7. Scale hidden gems</h4>
-        <p>Comparison (158K avg, 7 videos), Unboxing (151K avg, 11 videos), Company Profiles (133K avg, 3 videos) — massively underproduced.</p>
+        <div class="rec-card-header">
+            <div class="rec-icon">✕</div>
+            <h4>Sever the Weak Links</h4>
+        </div>
+        <p><b>Cut Showcases format by half AND completely halt Shorts.</b> Showcases average 39% beneath channel baseline. Shorts are dead weight (7.5K avg) on deep-tech channels.</p>
     </div>
     <div class="rec-card blue">
-        <h4>8. Create branded series</h4>
-        <p>"Knowledge Tuesday" at 8:30 PM MMT — creates audience habit, improves notification CTR, signals consistency to the algorithm.</p>
+        <div class="rec-card-header">
+            <div class="rec-icon">↗</div>
+            <h4>Establish 'Flagship Slots'</h4>
+        </div>
+        <p><b>Tuesday at 8:30 PM MMT</b> peaks at 171.6K views on average. Treat this window as sacred ground for highest-value productions to hack early-momentum.</p>
+    </div>
+    <div class="rec-card blue">
+        <div class="rec-card-header">
+            <div class="rec-icon">↗</div>
+            <h4>Scale Hidden Gems</h4>
+        </div>
+        <p><b>Comparisons (158K) & Unboxings (151K).</b> These are significantly underproduced relative to their high, consistent return profiles.</p>
     </div>
     """, unsafe_allow_html=True)
 
-# KPI targets
-st.markdown("#### 📊 KPI Targets")
-kpi_df = pd.DataFrame({
-    "Metric": ["Avg Views/Video", "Like Rate", "Knowledge Share", "Showcases Share", "Videos/Month", "Median Views"],
-    "Current": ["87,565", "5.35%", "67.6%", "13.5%", "13.8", "55,686"],
-    "6-Month Target": ["100,000", "5.5%", "50–60%", "< 10%", "12–15", "65,000"],
-    "12-Month Target": ["120,000", "6.0%", "50–60%", "< 10%", "12–15", "80,000"],
-})
-st.dataframe(kpi_df, use_container_width=True, hide_index=True)
-
-
-# ═══════════════════ MILESTONES ═══════════════════════════════════════════════
-st.markdown('<div class="section-header"><h2>🏆 Channel Milestones</h2></div>', unsafe_allow_html=True)
-
-milestones_data = {
-    "Milestone": ["1M Views", "5M Views", "10M Views", "25M Views", "50M Views"],
-    "Reached": ["Dec 2021", "May 2022", "Nov 2022", "Nov 2023", "Apr 2025"],
-    "Time": ["Baseline", "5 months", "11 months", "23 months", "40 months"],
-}
-st.dataframe(pd.DataFrame(milestones_data), use_container_width=True, hide_index=True)
-
-# Cumulative views
-cum = fdf.groupby("month")["view_count"].sum().cumsum().reset_index()
-cum.columns = ["Month", "Cumulative Views"]
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=cum["Month"], y=cum["Cumulative Views"],
-                         mode="lines", fill="tozeroy",
-                         line=dict(color=PURPLE, width=3),
-                         fillcolor="rgba(189,147,249,0.12)"))
-for val, label in [(1e6, "1M"), (5e6, "5M"), (10e6, "10M"), (25e6, "25M"), (50e6, "50M")]:
-    fig.add_hline(y=val, line_dash="dot", line_color=COMMENT,
-                  annotation_text=label, annotation_position="bottom right",
-                  annotation_font_color=COMMENT)
-fig.update_layout(title="Cumulative Views Over Time", **PLOT_LAYOUT, height=400)
-fig.update_yaxes(title="Cumulative Views", gridcolor=CURRENT)
-fig.update_xaxes(gridcolor=CURRENT)
-st.plotly_chart(fig, use_container_width=True, theme=None)
-
-
 # ═══════════════════ FOOTER ═══════════════════════════════════════════════════
-st.markdown("---")
+st.markdown("<br><hr>", unsafe_allow_html=True)
 st.markdown(f"""
-<div style="text-align: center; color: {COMMENT}; font-size: 0.8rem; padding: 1rem;">
-    Data sourced via YouTube Data API v3 &nbsp;|&nbsp; Report generated February 28, 2026 &nbsp;|&nbsp;
-    Categories assigned from 27 channel playlists
+<div style="text-align: center; color: {TEXT_MUTED}; font-size: 0.85rem; padding: 2rem;">
+    <b>TBH Labs Operating System</b><br>
+    Data sourced live via YouTube Data API v3 &nbsp;•&nbsp; Generated February 28, 2026
 </div>
 """, unsafe_allow_html=True)
