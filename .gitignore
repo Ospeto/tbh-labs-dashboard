@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+TBH_Labs_Myanmar_Analysis.py
+TBH_Labs_Analysis.py
