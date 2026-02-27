@@ -584,7 +584,7 @@ with col1:
         orientation="h",
         marker_color=COLORS[:len(cat_stats)],
         text=[f"{v/1000:.0f}K" for v in cat_stats["avg_views"]],
-        textposition="outside", textfont=dict(color=FG, size=12, weight="600"),
+        textposition="outside", textfont=dict(color=FG, size=12, weight=600),
         marker=dict(line=dict(width=0))
     ))
     fig.update_layout(title="Average Reach by Vertical", height=500, **PLOT_LAYOUT)
