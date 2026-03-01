@@ -9,13 +9,14 @@ Columns: channel_handle, video_id, title, view_count, like_count,
          upload_hour, day_of_week
 """
 
+import os
 import re
 import csv
 from datetime import datetime
 from googleapiclient.discovery import build
 
 # ── Config ───────────────────────────────────────────────────────────────────
-API_KEY = "AIzaSyCgR1peEdx_U6Q8gac9DBAWOd4mcfu_nEo"
+API_KEY = os.environ.get("YOUTUBE_API_KEY", "")
 OUTPUT_CSV = "Competitor_Videos.csv"
 
 CHANNELS = [
